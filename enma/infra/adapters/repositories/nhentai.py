@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Literal, Optional, cast
 from urllib.parse import urljoin, urlparse
+import os
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -23,6 +24,7 @@ from enma.domain.entities.search_result import Pagination, SearchResult, Thumb
 class CloudFlareConfig:
     user_agent: str
     cf_clearance: str
+    scrape_api: str
 
 class __StrEnum(str, Enum):...
 
@@ -56,8 +58,11 @@ class NHentai(IMangaRepository):
 
         headers = headers if headers is not None else {}
         params = params if params is not None else {}
+        params['api_key'] = self.__config.scrape_api
+        params['url'] = urlparse(url).geturl()
+        #params['keep_headers'] = 'True'
 
-        return requests.get(url=urlparse(url).geturl(),
+        return requests.get(url='https://api.scraperapi.com/',
                             headers={**headers, 'User-Agent': self.__config.user_agent},
                             params={**params},
                             cookies={'cf_clearance': self.__config.cf_clearance})
@@ -101,20 +106,9 @@ class NHentai(IMangaRepository):
                       id=doujin.get('id'),
                       created_at=datetime.fromtimestamp(doujin.get('upload_date'), tz=timezone.utc),
                       updated_at=datetime.fromtimestamp(doujin.get('upload_date'), tz=timezone.utc),
-                      authors=[Genre(id=genre.get('id'), url=self.__BASE_URL+genre.get('url')[1:],
-                                    name=genre.get('name')) for genre in doujin.get('tags') if genre.get('type') == 'artist'],
-                      genres=[Genre(id=genre.get('id'), url=self.__BASE_URL+genre.get('url')[1:],
+                      authors=[tag.get('name') for tag in doujin.get('tags') if tag.get('type') == 'artist'],
+                      genres=[Genre(id=genre.get('id'),
                                     name=genre.get('name')) for genre in doujin.get('tags') if genre.get('type') == 'tag'],
-                      groups=[Genre(id=genre.get('id'), url=self.__BASE_URL+genre.get('url')[1:],
-                                    name=genre.get('name')) for genre in doujin.get('tags') if genre.get('type') == 'group'],
-                      parodies=[Genre(id=genre.get('id'), url=self.__BASE_URL+genre.get('url')[1:],
-                                    name=genre.get('name')) for genre in doujin.get('tags') if genre.get('type') == 'parody'],
-                      characters=[Genre(id=genre.get('id'), url=self.__BASE_URL+genre.get('url')[1:],
-                                    name=genre.get('name')) for genre in doujin.get('tags') if genre.get('type') == 'character'],
-                      languages=[Genre(id=genre.get('id'), url=self.__BASE_URL+genre.get('url')[1:],
-                                    name=genre.get('name')) for genre in doujin.get('tags') if genre.get('type') == 'language'],
-                      categories=[Genre(id=genre.get('id'), url=self.__BASE_URL+genre.get('url')[1:],
-                                    name=genre.get('name')) for genre in doujin.get('tags') if genre.get('type') == 'category'],
                       thumbnail=Image(uri=self.__make_page_uri(type='thumbnail',
                                                                mime=MIME[doujin.get("images").get("thumbnail").get("t").upper()],
                                                                media_id=doujin.get('media_id')),
