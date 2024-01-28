@@ -43,14 +43,18 @@ class NHentai(IMangaRepository):
     Provides methods to fetch manga details, search for manga, etc.
     """
 
-    def __init__(self, config: Optional[CloudFlareConfig] = None) -> None:
+    def __init__(
+        self,
+        config: Optional[CloudFlareConfig] = None,
+        api_client: Optional[APIClient] = None,
+    ) -> None:
         self.__config = config
         self.__BASE_URL = "https://nhentai.net/"
         self.__API_URL = "https://nhentai.net/api/"
         self.__IMAGE_BASE_URL = "https://i.nhentai.net/galleries/"
         self.__AVATAR_URL = "https://i5.nhentai.net/"
         self.__TINY_IMAGE_BASE_URL = self.__IMAGE_BASE_URL.replace("/i.", "/t.")
-        self.api_client = APIClient()
+        self.api_client = api_client if api_client is not None else APIClient()
 
     def __make_request(
         self,
