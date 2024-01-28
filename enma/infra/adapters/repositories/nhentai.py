@@ -2,14 +2,12 @@
 This module provides an adapter for the nhentai repository.
 It contains functions and classes to interact with the nhentai API and retrieve manga data.
 """
-import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Literal, Optional, cast
 from urllib.parse import urljoin, urlparse
 
-import requests
 from bs4 import BeautifulSoup, Tag
 
 from enma.application.core.handlers.error import (
@@ -19,13 +17,13 @@ from enma.application.core.handlers.error import (
 from enma.application.core.interfaces.manga_repository import IMangaRepository
 from enma.domain.entities.manga import MIME, Chapter, Genre, Image, Manga, Title
 from enma.domain.entities.search_result import Pagination, SearchResult, Thumb
+from enma.infra.adapters.proxies.proxy import APIClient
 
 
 @dataclass
 class CloudFlareConfig:
     user_agent: str
     cf_clearance: str
-    scrape_api: str
 
 
 class __StrEnum(str, Enum):
@@ -52,6 +50,7 @@ class NHentai(IMangaRepository):
         self.__IMAGE_BASE_URL = "https://i.nhentai.net/galleries/"
         self.__AVATAR_URL = "https://i5.nhentai.net/"
         self.__TINY_IMAGE_BASE_URL = self.__IMAGE_BASE_URL.replace("/i.", "/t.")
+        self.api_client = APIClient()
 
     def __make_request(
         self,
@@ -66,15 +65,12 @@ class NHentai(IMangaRepository):
 
         headers = headers if headers is not None else {}
         params = params if params is not None else {}
-        params["api_key"] = self.__config.scrape_api
-        params["url"] = urlparse(url).geturl()
-        # params['keep_headers'] = 'True'
 
-        return requests.get(
-            url="https://api.scraperapi.com/",
+        return self.api_client.make_api_request(
+            url=urlparse(url).geturl(),
             headers={**headers, "User-Agent": self.__config.user_agent},
-            params={**params},
             cookies={"cf_clearance": self.__config.cf_clearance},
+            params={**params},
         )
 
     def set_config(self, config: CloudFlareConfig) -> None:
