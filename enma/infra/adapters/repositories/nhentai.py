@@ -2,6 +2,7 @@
 This module provides an adapter for the nhentai repository.
 It contains functions and classes to interact with the nhentai API and retrieve manga data.
 """
+
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
@@ -26,8 +27,7 @@ class CloudFlareConfig:
     cf_clearance: str
 
 
-class __StrEnum(str, Enum):
-    ...
+class __StrEnum(str, Enum): ...
 
 
 class Sort(__StrEnum):
@@ -94,7 +94,8 @@ class NHentai(IMangaRepository):
         return urljoin(self.__IMAGE_BASE_URL, f"{media_id}/{page_number}.{mime.value}")
 
     def get(self, identifier: str) -> Manga | None:
-        response = self.__make_request(url=f"{self.__API_URL}/gallery/{identifier}")
+        url = urljoin(self.__API_URL, f"gallery/{identifier}")
+        response = self.__make_request(url=url)
 
         if response.status_code != 200:
             return
